@@ -1,0 +1,10 @@
+*.exe
+*.o
+*.obj
+*.out
+
+__pycache__/
+*.pyc
+
+*.tmp
+*.log
