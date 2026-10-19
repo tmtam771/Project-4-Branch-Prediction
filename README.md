@@ -1,44 +1,51 @@
-# Project 4 - Phase 1 (VS Code starter)
+# Project 4 — Phase 1, Step 2: modular simulator
 
-Built from the user's Lab 4 Task 4 simulator.
+Your old Phase 1 starter has been split into three `.c` files and a shared header.
+No branch-prediction logic was intentionally changed.
 
-## Build
+## Visual Studio Code on Windows (PowerShell)
 
-Open this folder with **File > Open Folder** in VS Code. Open **Terminal > New Terminal**.
+1. **File > Open Folder** and select this folder.
+2. Open **Terminal > New Terminal**.
+3. Compile **all three source files**:
 
-Linux/WSL/macOS with GCC:
+```powershell
+gcc -std=c11 -Wall -Wextra -O2 -o branch_sim.exe branch_sim.c predictors.c trace.c
+```
 
-    gcc -std=c11 -Wall -Wextra -O2 -o branch_sim branch_sim.c
-    ./branch_sim
-    ./branch_sim traces/my_trace.txt
+4. Run:
 
-Windows PowerShell with MinGW GCC:
+```powershell
+.\branch_sim.exe
+.\branch_sim.exe .\traces\my_trace.txt
+python .\tests\smoke_test.py
+```
 
-    gcc -std=c11 -Wall -Wextra -O2 -o branch_sim.exe branch_sim.c
-    .\branch_sim.exe
-    .\branch_sim.exe traces/my_trace.txt
+If `python` is not recognized, use `py`.
 
-Use `gcc --version` to check your compiler. VS Code by itself is not a compiler.
+## Linux / WSL
 
-## What was preserved?
+```bash
+make
+./branch_sim
+./branch_sim traces/my_trace.txt
+python3 tests/smoke_test.py
+```
 
-- Built-in Lab 4 trace: 580 branches.
-- Always-Taken, Always-Not-Taken, 1-bit, 2-bit, GShare baselines.
-- Old Lab 4 tournament with 1-bit selector (for reference; NOT the Project 4 tournament).
-- Original Task 4 implementation: `lab4_branch_sim_backup.c`.
+## What each file does
 
-## Unified runner
+- `branch_sim.h`: common types and function prototypes.
+- `branch_sim.c`: argument parsing, shared GHR, experiment loop, statistics.
+- `predictors.c`: the Lab 4 classic predictors plus the old 1-bit-selector tournament for regression reference.
+- `trace.c`: synthetic trace generator and text trace parser.
+- `tests/smoke_test.py`: check regression on the Lab 4 built-in and custom traces.
 
-All models use a common predict() and update(), and share the same GHR from the runner. The runner predicts all models first, then updates, then advances GHR once.
+The **original Lab 4** tournament is only a baseline here; the final Project 4 tournament requires a separate **2-bit selector**.
 
-## MPKI warning
+**MPKB != MPKI:** built-in and branch-only traces have no instruction count. The program correctly displays `MPKI=N/A` unless you supply a verified total instruction count via `--instructions N`.
 
-The Lab 4 trace files list branches, not total instructions. `MPKB` means mispredictions per 1000 **branches**. Accurate `MPKI` requires verified total **instructions** from a matching trace/workload. Therefore `MPKI` is N/A until given a real count with `--instructions N`. Do not invent N.
+## Next steps
 
-## Future phases
-
-Phase 2: implement TAGE 4 tagged tables (history 2/4/8/16).
-Phase 3: perceptron.
-Phase 4: 2-bit tournament + ChampSim evaluation.
-
-The C loader accepts `0x400120 T`, `0x400120 N` or a bare `T` / `N`. Binary compressed ChampSim instruction traces are NOT supported yet; they require a format-aware adapter.
+- Phase 2: add `tage.c` + `tage.h` with separate predictor state, preserving the common branch history.
+- Phase 3: add `perceptron.c` + `perceptron.h`.
+- Phase 4: add the 2-bit tournament chooser and evaluate on at least 4 real ChampSim traces (with verified instruction counts).
