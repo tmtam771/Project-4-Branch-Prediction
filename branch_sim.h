@@ -1,17 +1,18 @@
 #ifndef BRANCH_SIM_H
 #define BRANCH_SIM_H
+#include "perceptron.h"
 
 #include <stdint.h>
 #include <stdbool.h>
 
 #define MAX_TRACE 500000
 #define MAX_TABLE 4096
-#define MAX_PREDICTORS 10
+#define MAX_PREDICTORS 16
 
 typedef struct { uint64_t pc; bool taken; } Branch;
-typedef enum { ALWAYS_T, ALWAYS_N, ONE_BIT, TWO_BIT, GSHARE, TOURNEY_LAB4 } Kind;
+typedef enum { ALWAYS_T, ALWAYS_N, ONE_BIT, TWO_BIT, GSHARE, TOURNEY_LAB4, PERCEPTRON } Kind;
 
-typedef struct {
+typedef struct Predictor {
     Kind kind;
     char name[64];
     int size;
@@ -22,6 +23,10 @@ typedef struct {
     uint8_t gshare_table[MAX_TABLE];
     uint8_t selector[MAX_TABLE];
     uint64_t correct, mispred;
+
+    //Perceptron fields
+    PerceptronPredictor perc;
+    int last_y;
 } Predictor;
 
 /* Classic baseline predictor API */

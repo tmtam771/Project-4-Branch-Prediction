@@ -5,6 +5,7 @@
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
+#include "perceptron.h"
 
 static Branch trace_data[MAX_TRACE];
 static Predictor models[MAX_PREDICTORS];
@@ -56,6 +57,7 @@ int main(int argc, char **argv) {
     init_model(&models[m++],GSHARE,"GShare (h=8,size=256)",256,8,0,0);
     init_model(&models[m++],GSHARE,"GShare (h=12,size=1024)",1024,12,0,0);
     init_model(&models[m++],TOURNEY_LAB4,"Lab4 Tournament (1-bit)",256,12,1024,256);
+    init_model(&models[m++], PERCEPTRON, "Perceptron (H=32, N=128)", 128, 32, 0, 0);
 
     /* One shared GHR. Predict all models before any update; shift ONCE per branch. */
     uint64_t ghr=0;
