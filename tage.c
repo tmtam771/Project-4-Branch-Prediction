@@ -70,24 +70,36 @@ static void train_counter(uint8_t *counter, bool actual, uint8_t maximum)
     }
 }
 
+
 static TageMatch find_provider(BranchInput input)
 {
-    unsigned base_index = (unsigned)((input.pc >> 2) & (TAGE_ENTRIES - 1U));
-    TageMatch match = {-1, 0, counter_prediction(base_ctr[base_index])};
+    unsigned base_index =
+        (unsigned)((input.pc >> 2) & (TAGE_ENTRIES - 1U));
 
-    /* Search from short to long history; the last matching table wins. */
+    // Base predictor uses 2-bit counters
+    TageMatch match = {
+        -1,
+        0,
+        base_ctr[base_index] >= 2
+    };
+
+    /* Search from short to long history;
+       the longest matching table wins. */
     for (unsigned t = 0; t < TAGE_NUM_TABLES; ++t) {
         unsigned index = table_index(input, t);
         TageEntry *entry = &tagged[t].entry[index];
 
-        if (entry->valid && entry->tag == make_tag(input, t)) {
+        if (entry->valid &&
+            entry->tag == make_tag(input, t)) {
             match.provider_table = (int)t;
             match.provider_index = index;
             match.prediction = counter_prediction(entry->ctr);
         }
     }
+
     return match;
 }
+
 
 void tage_init(void)
 {
