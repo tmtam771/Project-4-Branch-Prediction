@@ -17,10 +17,14 @@ static uint8_t base_ctr[TAGE_ENTRIES]; /* 2-bit base predictor */
 static const unsigned history_lengths[TAGE_NUM_TABLES] = {2, 4, 8, 16};
 
 typedef struct {
-    int provider_table; /* -1 means base predictor */
+    int provider_table;
     unsigned provider_index;
-    bool prediction;
+
+    bool prediction;           // Final prediction
+    bool provider_prediction;  // Longest matching table
+    bool alternate_prediction; // Next shorter matching table
 } TageMatch;
+
 
 static uint64_t history_mask(unsigned length)
 {
@@ -70,30 +74,45 @@ static void train_counter(uint8_t *counter, bool actual, uint8_t maximum)
     }
 }
 
-
 static TageMatch find_provider(BranchInput input)
 {
     unsigned base_index =
         (unsigned)((input.pc >> 2) & (TAGE_ENTRIES - 1U));
 
-    // Base predictor uses 2-bit counters
+    bool base_prediction = base_ctr[base_index] >= 2;
+
     TageMatch match = {
         -1,
         0,
-        base_ctr[base_index] >= 2
+        base_prediction,
+        base_prediction,
+        base_prediction
     };
 
-    /* Search from short to long history;
-       the longest matching table wins. */
     for (unsigned t = 0; t < TAGE_NUM_TABLES; ++t) {
         unsigned index = table_index(input, t);
         TageEntry *entry = &tagged[t].entry[index];
 
         if (entry->valid &&
             entry->tag == make_tag(input, t)) {
+
+            // Previous matching provider becomes alternate
+            match.alternate_prediction =
+                match.provider_prediction;
+
             match.provider_table = (int)t;
             match.provider_index = index;
-            match.prediction = counter_prediction(entry->ctr);
+
+            match.provider_prediction =
+                counter_prediction(entry->ctr);
+
+            // Weak states of 3-bit counter
+            bool weak = (entry->ctr == 3 ||
+                         entry->ctr == 4);
+
+            match.prediction = weak
+                ? match.alternate_prediction
+                : match.provider_prediction;
         }
     }
 
@@ -117,22 +136,32 @@ void tage_update(BranchInput input, bool actual)
 {
     TageMatch match = find_provider(input);
     unsigned base_index = (unsigned)((input.pc >> 2) & (TAGE_ENTRIES - 1U));
+ 
+if (match.provider_table >= 0) {
+    TageEntry *provider =
+        &tagged[match.provider_table].entry[
+            match.provider_index
+        ];
 
-    if (match.provider_table >= 0) {
-        TageEntry *provider =
-            &tagged[match.provider_table].entry[match.provider_index];
-        bool was_correct = (match.prediction == actual);
+    // Train the provider's 3-bit counter
+    train_counter(&provider->ctr, actual, 7);
 
-        train_counter(&provider->ctr, actual, 7);
+    // Update usefulness only when provider and
+    // alternate disagree.
+    if (match.provider_prediction !=
+        match.alternate_prediction) {
 
-        if (was_correct) {
-            if (provider->useful < 3) ++provider->useful;
-        } else if (provider->useful > 0) {
-            --provider->useful;
+        if (match.provider_prediction == actual) {
+            if (provider->useful < 3)
+                ++provider->useful;
+        } else {
+            if (provider->useful > 0)
+                --provider->useful;
         }
-    } else {
-        train_counter(&base_ctr[base_index], actual, 3);
     }
+} else {
+    train_counter(&base_ctr[base_index], actual, 3);
+}
 
     /* On a miss, allocate in a table with longer history than the provider. */
     if (match.prediction != actual) {
