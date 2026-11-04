@@ -15,11 +15,6 @@ void init_model(Predictor *p, Kind kind, const char *name,
     memset(p->table, (kind == ONE_BIT) ? 1 : 2, sizeof(p->table));
     memset(p->gshare_table, 2, sizeof(p->gshare_table));
     memset(p->selector, 1, sizeof(p->selector)); /* favor GShare initially */
-
-    if (kind == PERCEPTRON) {
-        perceptron_init(&p->perc);
-        p->last_y = 0;
-    }
 }
 
 static uint32_t idx_pc(uint64_t pc, int size) {
@@ -42,9 +37,6 @@ bool predict(const Predictor *p, uint64_t pc, uint64_t history) {
         g = idx_gshare(pc,history,p->history_bits,p->gshare_size);
         s = idx_pc(pc >> 2,p->selector_size);
         return p->selector[s] ? (p->gshare_table[g] >= 2) : (p->table[b] >= 2);
-
-    case PERCEPTRON:
-        return perceptron_predict(&p->perc, pc, (int *)&((Predictor *)p)->last_y);
     }
     return false;
 }
@@ -73,9 +65,6 @@ void update(Predictor *p, uint64_t pc, uint64_t history, bool actual) {
         train_2bit(&p->table[b],actual);
         train_2bit(&p->gshare_table[g],actual);
         return;
-    case PERCEPTRON:
-        perceptron_update(&p->perc, pc, actual, p->last_y);     
-        return;
     }
 }
 uint64_t storage_bits(const Predictor *p) {
@@ -86,8 +75,7 @@ uint64_t storage_bits(const Predictor *p) {
     case GSHARE: return 2ULL * p->size + p->history_bits;
     case TOURNEY_LAB4:
         return 2ULL*p->size + 2ULL*p->gshare_size + p->history_bits + p->selector_size;
-    case PERCEPTRON:
-        return perceptron_get_storage_bits();
     }
     return 0;
 }
+
