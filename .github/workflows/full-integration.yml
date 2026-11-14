@@ -12,5 +12,5 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Test all predictor integrations
-        run: python3 tests/full_integration_test.py
+      - name: Test baseline and streaming predictors
+        run: python3 tests/full_integration_test.py --stress

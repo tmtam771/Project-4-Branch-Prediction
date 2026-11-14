@@ -133,6 +133,12 @@ def run_suite(stress=False):
         validate_math(rows_g, 580)
         check(rows_p["Always-Taken"]["correct"] == 390,
               "Classic Always-Taken regression")
+        check(rows_p["TAGE"]["correct"] == 472, "TAGE built-in regression")
+        check(rows_p["Perceptron"]["correct"] == 458, "Perceptron built-in regression")
+        check(rows_p["Tournament (TAGE+Perceptron)"]["correct"] == 472,
+              "TAGE+Perceptron Tournament regression")
+        check(rows_g["Tournament (TAGE+GShare)"]["correct"] == 475,
+              "TAGE+GShare Tournament regression")
         check(rows_p["GShare (h=12,size=1024)"]["correct"] == 474,
               "Classic GShare regression")
         check("Perceptron" in rows_p and
@@ -206,9 +212,17 @@ def run_suite(stress=False):
             with too_large.open("w", encoding="utf-8") as f:
                 for i in range(500001):
                     f.write(f"0x{0x100 + (i % 7)*4:x} {'T' if i%2 else 'N'}\n")
-            command([perc, too_large], expected_success=False)
-            command([gshare, too_large], expected_success=False)
-            print("PASS  MAX_TRACE limit: rejected 500,001 branches")
+            output_p = run_sim(perc, too_large)
+            output_g = run_sim(gshare, too_large)
+            check("branches=500001" in output_p and "branches=500001" in output_g,
+                  "Streaming did not process the entire 500,001-branch trace")
+            p_rows, g_rows = parse(output_p), parse(output_g)
+            validate_math(p_rows, 500001)
+            validate_math(g_rows, 500001)
+            for name in [*BASELINES, "TAGE"]:
+                check(p_rows[name] == g_rows[name],
+                      f"Streaming cross-build mismatch in {name}")
+            print("PASS  Streaming: all 500,001 branches processed, cross-build statistics consistent")
 
         print("\nALL FULL INTEGRATION TESTS PASSED")
 
@@ -216,7 +230,7 @@ def run_suite(stress=False):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--stress", action="store_true",
-                        help="also test the 500,000-branch input limit")
+                        help="also test a 500,001-branch streaming input")
     args = parser.parse_args()
     try:
         run_suite(stress=args.stress)

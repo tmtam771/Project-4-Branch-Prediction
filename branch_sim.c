@@ -1,4 +1,4 @@
-/* Project 4 main harness. Predict ALL before update; shift shared GHR once. */
+/* Project 4 streaming harness: predict all, update all, shift shared GHR once. */
 #include "branch_sim.h"
 #include "tage.h"
 #include "tournament.h"
@@ -8,32 +8,33 @@
 #include <errno.h>
 #include <inttypes.h>
 
-static Branch trace_data[MAX_TRACE];
+/* Only the small built-in test trace is buffered; file traces stream per branch. */
+enum { BUILTIN_TRACE_CAPACITY = 580, SHARED_HISTORY_BITS = 32 };
+static Branch built_in_data[BUILTIN_TRACE_CAPACITY];
 static Predictor models[MAX_PREDICTORS];
-
-enum { SHARED_HISTORY_BITS = 32 };
 
 static bool parse_instruction_count(const char *arg, uint64_t *number) {
     char *end;
     errno=0;
     unsigned long long tmp=strtoull(arg,&end,10);
-    if(errno || !arg[0] || *end || tmp==0) return false;
+    if(errno || !arg[0] || arg[0]=='-' || *end || tmp==0) return false;
     *number=(uint64_t)tmp;
     return true;
 }
 
 static void print_result(const char *name, uint64_t correct, uint64_t mispred,
-                         int n, uint64_t instructions, uint64_t bits) {
-    double acc=100.0*correct/(double)n;
-    double mpkb=1000.0*mispred/(double)n;
-    printf("%-29s %4" PRIu64 "/%-3d %7.2f%% %9.2f ",name,correct,n,acc,mpkb);
-    if(instructions) printf("%10.2f ",1000.0*mispred/(double)instructions);
+                         uint64_t n, uint64_t instructions, uint64_t bits) {
+    double acc=100.0*(double)correct/(double)n;
+    double mpkb=1000.0*(double)mispred/(double)n;
+    printf("%-29s %4" PRIu64 "/%-3" PRIu64 " %7.2f%% %9.2f ",
+           name,correct,n,acc,mpkb);
+    if(instructions) printf("%10.2f ",1000.0*(double)mispred/(double)instructions);
     else printf("%10s ","N/A");
     printf("%8" PRIu64 "\n",bits);
 }
 
 int main(int argc, char **argv) {
-    char *trace_file=NULL;
+    const char *trace_file=NULL;
     uint64_t instructions=0;
     for(int i=1;i<argc;i++) {
         if(strcmp(argv[i],"--instructions")==0) {
@@ -46,18 +47,15 @@ int main(int argc, char **argv) {
             return 1;
         } else trace_file=argv[i];
     }
-    int n=trace_file ? load_trace(trace_file,trace_data,MAX_TRACE)
-                     : built_in_trace(trace_data,MAX_TRACE);
-    if(n<=0) { fprintf(stderr,"No valid branches to simulate\n"); return 1; }
-    if(instructions && instructions<(uint64_t)n) {
-        fprintf(stderr,"Instruction count cannot be less than branch count (%d)\n",n);
-        return 1;
+
+    TraceStream stream = {0};
+    int built_count = 0;
+    if (trace_file) {
+        if (!trace_stream_open(&stream, trace_file)) return 1;
+    } else {
+        built_count = built_in_trace(built_in_data, BUILTIN_TRACE_CAPACITY);
+        if(built_count <= 0) { fprintf(stderr,"No built-in branches\n"); return 1; }
     }
-    uint64_t taken=0;
-    for(int i=0;i<n;i++) if(trace_data[i].taken) taken++;
-    printf("Trace: %s | branches=%d | taken=%" PRIu64 " | not-taken=%" PRIu64 "\n",
-           trace_file ? trace_file : "built-in", n, taken, (uint64_t)n-taken);
-    if(!instructions) printf("Note: instruction count unknown; MPKI=N/A. MPKB shown instead.\n");
 
     int m=0;
     init_model(&models[m++],ALWAYS_T,"Always-Taken",0,0,0,0);
@@ -86,17 +84,29 @@ int main(int argc, char **argv) {
     const char *tournament_name="Tournament (TAGE+GShare)";
 #endif
 
-    /* One shared GHR. Predict all models before any update; shift ONCE per branch. */
-    uint64_t ghr=0;
-    for(int i=0;i<n;i++) {
-        const BranchInput input={trace_data[i].pc,ghr};
-        const bool actual=trace_data[i].taken;
+    uint64_t n=0,taken=0,ghr=0;
+    for (;;) {
+        Branch branch;
+        if (trace_file) {
+            int rc = trace_stream_next(&stream, &branch);
+            if(rc == 0) break;
+            if(rc < 0) { trace_stream_close(&stream); return 1; }
+        } else {
+            if(n >= (uint64_t)built_count) break;
+            branch = built_in_data[n];
+        }
+        ++n;
+        if (branch.taken) ++taken;
+        const BranchInput input = {branch.pc,ghr};
+        const bool actual = branch.taken;
+
+        /* Predictions are all based on the SAME pre-update history. */
         bool guesses[MAX_PREDICTORS];
         for(int j=0;j<m;j++) guesses[j]=predict(&models[j],input.pc,input.history);
         const bool prediction_a=tage_predict(input);
 #ifdef BRANCH_SIM_USE_PERCEPTRON
         const bool prediction_b=perceptron_predict(input);
-        if(prediction_b==actual) perceptron_correct++;
+        if(prediction_b==actual) ++perceptron_correct;
 #else
         const bool prediction_b=guesses[gshare_component];
 #endif
@@ -104,11 +114,11 @@ int main(int argc, char **argv) {
                                                         prediction_a,prediction_b);
 
         for(int j=0;j<m;j++) {
-            if(guesses[j]==actual) models[j].correct++;
-            else models[j].mispred++;
+            if(guesses[j]==actual) ++models[j].correct;
+            else ++models[j].mispred;
         }
-        if(prediction_a==actual) tage_correct++;
-        if(tournament_guess==actual) tournament_correct++;
+        if(prediction_a==actual) ++tage_correct;
+        if(tournament_guess==actual) ++tournament_correct;
 
         tournament_update(&tournament,input.pc,prediction_a,prediction_b,actual);
         for(int j=0;j<m;j++) update(&models[j],input.pc,input.history,actual);
@@ -116,9 +126,19 @@ int main(int argc, char **argv) {
 #ifdef BRANCH_SIM_USE_PERCEPTRON
         perceptron_update(input,actual);
 #endif
+        /* Exactly one shift per branch; no resets between trace chunks. */
         ghr=((ghr<<1)|(uint64_t)actual) & ((UINT64_C(1)<<SHARED_HISTORY_BITS)-1);
     }
+    if(trace_file) trace_stream_close(&stream);
+    if(n==0) { fprintf(stderr,"No valid branches to simulate\n"); return 1; }
+    if(instructions && instructions<n) {
+        fprintf(stderr,"Instruction count cannot be less than branch count (%" PRIu64 ")\n",n);
+        return 1;
+    }
 
+    printf("Trace: %s | branches=%" PRIu64 " | taken=%" PRIu64 " | not-taken=%" PRIu64 "\n",
+           trace_file ? trace_file : "built-in",n,taken,n-taken);
+    if(!instructions) printf("Note: instruction count unknown; MPKI=N/A. MPKB shown instead.\n");
     printf("\n%-29s %8s %8s %9s %10s %8s\n",
            "Predictor","Correct","Acc%","MPKB","MPKI","Bits");
     printf("--------------------------------------------------------------------------\n");
@@ -127,16 +147,16 @@ int main(int argc, char **argv) {
         print_result(p->name,p->correct,p->mispred,n,instructions,storage_bits(p));
     }
     const uint64_t tage_bits=tage_storage_bits()+SHARED_HISTORY_BITS;
-    print_result("TAGE",tage_correct,(uint64_t)n-tage_correct,n,instructions,tage_bits);
+    print_result("TAGE",tage_correct,n-tage_correct,n,instructions,tage_bits);
 #ifdef BRANCH_SIM_USE_PERCEPTRON
     const uint64_t component_bits=perceptron_storage_bits();
-    print_result("Perceptron",perceptron_correct,(uint64_t)n-perceptron_correct,
+    print_result("Perceptron",perceptron_correct,n-perceptron_correct,
                  n,instructions,component_bits+SHARED_HISTORY_BITS);
 #else
     const Predictor *gshare=&models[gshare_component];
     const uint64_t component_bits=storage_bits(gshare)-gshare->history_bits;
 #endif
-    print_result(tournament_name,tournament_correct,(uint64_t)n-tournament_correct,
+    print_result(tournament_name,tournament_correct,n-tournament_correct,
                  n,instructions,tage_bits+component_bits+tournament_chooser_bits());
     printf("\n[DONE]\n");
     return 0;
