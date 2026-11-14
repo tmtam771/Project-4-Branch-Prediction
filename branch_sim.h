@@ -3,8 +3,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
-#define MAX_TRACE 500000
+#define MAX_TRACE 500000 /* Legacy load_trace cap, not a streaming limit */
 #define MAX_TABLE 4096
 #define MAX_PREDICTORS 10
 
@@ -31,7 +32,17 @@ bool predict(const Predictor *p, uint64_t pc, uint64_t history);
 void update(Predictor *p, uint64_t pc, uint64_t history, bool actual);
 uint64_t storage_bits(const Predictor *p);
 
-/* Trace API */
+/* Constant-memory trace stream. All state is preserved by the simulator across calls. */
+typedef struct {
+    FILE *file;
+    uint64_t line_number;
+    uint64_t branch_number;
+} TraceStream;
+bool trace_stream_open(TraceStream *stream, const char *path);
+int trace_stream_next(TraceStream *stream, Branch *out); /* 1=branch, 0=EOF, -1=error */
+void trace_stream_close(TraceStream *stream);
+
+/* Trace API (legacy compatibility) */
 int built_in_trace(Branch *out, int max);
 int load_trace(const char *path, Branch *out, int max);
 
