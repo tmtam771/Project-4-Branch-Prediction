@@ -1,0 +1,12 @@
+#ifndef PERCEPTRON_H
+#define PERCEPTRON_H
+
+#include "predictor_api.h"
+
+#define PERCEPTRON_HISTORY_LEN 32
+#define PERCEPTRON_TABLE_SIZE 128
+#define PERCEPTRON_THETA 75
+#define PERCEPTRON_MAX_WEIGHT 127
+#define PERCEPTRON_MIN_WEIGHT (-128)
+
+#endif
