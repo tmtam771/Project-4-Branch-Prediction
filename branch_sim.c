@@ -11,7 +11,7 @@
 static Branch trace_data[MAX_TRACE];
 static Predictor models[MAX_PREDICTORS];
 
-enum { SHARED_HISTORY_BITS = 16 };
+enum { SHARED_HISTORY_BITS = 32 };
 
 static bool parse_instruction_count(const char *arg, uint64_t *number) {
     char *end;
