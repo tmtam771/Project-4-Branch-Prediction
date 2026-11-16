@@ -11,12 +11,13 @@ The source trace must use the standard (not CloudSuite) input_instr layout.
 
 from __future__ import annotations
 
+import gzip
 import argparse
 import lzma
 import re
 import struct
 import sys
-from pathlib import Path
+from pathlib import Path 
 
 RECORD_SIZE = 64
 SOURCE_RE = re.compile(r"# Source: (.+)\s*$")
@@ -64,7 +65,9 @@ def verify(src_path: Path, text_path: Path):
                 f"Source filename mismatch: header says {name_in_header!r}; "
                 f"supplied file is {src_path.name!r}"
             )
-        with lzma.open(src_path, "rb") as xz:
+        opener = gzip.open if src_path.suffix.lower() == ".gz" else lzma.open
+
+        with opener(src_path, "rb") as xz:
             while branches_read < declared_branches:
                 record = xz.read(RECORD_SIZE)
                 if not record:

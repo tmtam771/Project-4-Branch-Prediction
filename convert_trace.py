@@ -1,8 +1,9 @@
+import gzip
 import lzma
 import struct
 import sys
 
-RECORD_SIZE = 64  # Standard ChampSim input_instr binary record size
+RECORD_SIZE = 64
 
 
 def convert_trace(input_path, output_path, target_branches=600_000):
@@ -10,13 +11,22 @@ def convert_trace(input_path, output_path, target_branches=600_000):
   total_branches = 0
   branch_records = []
 
-  with lzma.open(input_path, "rb") as fin:
+  opener = gzip.open if input_path.lower().endswith(".gz") else lzma.open
+
+  with opener(input_path, "rb") as fin:
     while True:
       chunk = fin.read(RECORD_SIZE)
-      if len(chunk) < RECORD_SIZE:
+      if not chunk:
         break
 
+      if len(chunk) != RECORD_SIZE:
+        raise ValueError("Incomplete ChampSim record")
+
       ip, is_branch, branch_taken = struct.unpack("<QBB", chunk[:10])
+
+      if is_branch not in (0, 1) or branch_taken not in (0, 1):
+        raise ValueError("Invalid ChampSim record format")
+
       total_instructions += 1
 
       if is_branch:
@@ -34,16 +44,13 @@ def convert_trace(input_path, output_path, target_branches=600_000):
     fout.writelines(branch_records)
 
   print(f"Saved: {output_path}")
-  print(f"  Branches:     {total_branches}")
+  print(f"  Branches: {total_branches}")
   print(f"  Instructions: {total_instructions}")
-  print(
-      f"  Run command:  .\\branch_sim.exe {output_path} --instructions"
-      f" {total_instructions}\n"
-  )
 
 
 if __name__ == "__main__":
   if len(sys.argv) != 3:
-    print("Usage: python convert_trace.py <input.champsimtrace.xz> <output.txt>")
+    print("Usage: python convert_trace.py <input.xz/.gz> <output.txt>")
     sys.exit(1)
+
   convert_trace(sys.argv[1], sys.argv[2])
