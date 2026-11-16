@@ -1,0 +1,31 @@
+﻿Workload,Category,Predictor,Branches,Instructions,Correct,Mispredictions,Accuracy_percent,MPKB,MPKI,Storage_bits,Source_URL
+GCC,Integer,"GShare (h=12,size=1024)",600000,3134864,596947,3053,99.49,5.09,0.97,2060,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/gcc-perceptron.txt
+GCC,Integer,TAGE,600000,3134864,580937,19063,96.82,31.77,6.08,14880,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/gcc-perceptron.txt
+GCC,Integer,Perceptron,600000,3134864,598359,1641,99.73,2.73,0.52,33824,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/gcc-perceptron.txt
+GCC,Integer,Tournament (TAGE+Perceptron),600000,3134864,598279,1721,99.71,2.87,0.55,50720,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/gcc-perceptron.txt
+GCC,Integer,Tournament (TAGE+GShare),600000,3134864,597304,2696,99.55,4.49,0.86,18976,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/gcc-gshare.txt
+MCF,Integer,"GShare (h=12,size=1024)",600000,6838985,588931,11069,98.16,18.45,1.62,2060,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/mcf-perceptron.txt
+MCF,Integer,TAGE,600000,6838985,579760,20240,96.63,33.73,2.96,14880,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/mcf-perceptron.txt
+MCF,Integer,Perceptron,600000,6838985,589206,10794,98.20,17.99,1.58,33824,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/mcf-perceptron.txt
+MCF,Integer,Tournament (TAGE+Perceptron),600000,6838985,589162,10838,98.19,18.06,1.58,50720,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/mcf-perceptron.txt
+MCF,Integer,Tournament (TAGE+GShare),600000,6838985,588971,11029,98.16,18.38,1.61,18976,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/mcf-gshare.txt
+BWAVES,Floating-point,"GShare (h=12,size=1024)",600000,5525498,561027,38973,93.50,64.95,7.05,2060,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/bwaves-perceptron.txt
+BWAVES,Floating-point,TAGE,600000,5525498,548683,51317,91.45,85.53,9.29,14880,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/bwaves-perceptron.txt
+BWAVES,Floating-point,Perceptron,600000,5525498,565728,34272,94.29,57.12,6.20,33824,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/bwaves-perceptron.txt
+BWAVES,Floating-point,Tournament (TAGE+Perceptron),600000,5525498,565893,34107,94.32,56.84,6.17,50720,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/bwaves-perceptron.txt
+BWAVES,Floating-point,Tournament (TAGE+GShare),600000,5525498,561194,38806,93.53,64.68,7.02,18976,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/bwaves-gshare.txt
+XALANCBMK,Integer,"GShare (h=12,size=1024)",600000,2297562,579758,20242,96.63,33.74,8.81,2060,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/xalancbmk-perceptron.txt
+XALANCBMK,Integer,TAGE,600000,2297562,577755,22245,96.29,37.08,9.68,14880,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/xalancbmk-perceptron.txt
+XALANCBMK,Integer,Perceptron,600000,2297562,591139,8861,98.52,14.77,3.86,33824,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/xalancbmk-perceptron.txt
+XALANCBMK,Integer,Tournament (TAGE+Perceptron),600000,2297562,591089,8911,98.51,14.85,3.88,50720,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/xalancbmk-perceptron.txt
+XALANCBMK,Integer,Tournament (TAGE+GShare),600000,2297562,588059,11941,98.01,19.90,5.20,18976,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/xalancbmk-gshare.txt
+Server,Server,"GShare (h=12,size=1024)",600000,3116450,443778,156222,73.96,260.37,50.13,2060,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/server-perceptron.txt
+Server,Server,TAGE,600000,3116450,397797,202203,66.30,337.00,64.88,14880,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/server-perceptron.txt
+Server,Server,Perceptron,600000,3116450,507960,92040,84.66,153.40,29.53,33824,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/server-perceptron.txt
+Server,Server,Tournament (TAGE+Perceptron),600000,3116450,505419,94581,84.24,157.63,30.35,50720,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/server-perceptron.txt
+Server,Server,Tournament (TAGE+GShare),600000,3116450,452204,147796,75.37,246.33,47.42,18976,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/server-gshare.txt
+Graph,Graph,"GShare (h=12,size=1024)",600000,1576476,562380,37620,93.73,62.70,23.86,2060,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/graph-perceptron.txt
+Graph,Graph,TAGE,600000,1576476,562524,37476,93.75,62.46,23.77,14880,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/graph-perceptron.txt
+Graph,Graph,Perceptron,600000,1576476,599833,167,99.97,0.28,0.11,33824,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/graph-perceptron.txt
+Graph,Graph,Tournament (TAGE+Perceptron),600000,1576476,599835,165,99.97,0.28,0.10,50720,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/graph-perceptron.txt
+Graph,Graph,Tournament (TAGE+GShare),600000,1576476,562524,37476,93.75,62.46,23.77,18976,https://github.com/tmtam771/Project-4-Branch-Prediction/blob/main/results/graph-gshare.txt
